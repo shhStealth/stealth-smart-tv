@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Stealth Smart TV</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Stealth Smart TV</h1>
+    <div id="now-playing">On TV: &mdash;</div>
+  </header>
+
+  <main class="grid" id="grid" tabindex="-1"></main>
+
+  <div id="status"></div>
+
+  <div id="tile-modal" class="modal hidden">
+    <form id="tile-form" class="modal-box">
+      <h2>Add an app</h2>
+      <p id="tile-form-error" class="form-error hidden"></p>
+      <label>
+        Name
+        <input type="text" id="tile-name" maxlength="60" required>
+      </label>
+      <label>
+        Address (URL)
+        <input type="url" id="tile-url" placeholder="https://example.com" required>
+      </label>
+      <label>
+        Icon (optional)
+        <input type="file" id="tile-icon" accept="image/png,image/jpeg,image/webp,image/gif">
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="tile-cancel">Cancel</button>
+        <button type="submit" id="tile-save">Add</button>
+      </div>
+    </form>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Your own tiles + uploaded icons — not part of the repo, they're your data.
+data/
+
+# Per-machine overrides (DASHBOARD_HOST, ROKU_IP, TV_GEOMETRY).
+config.local.sh
+
+# Source logo files used to make icons for a personal deployment — never
+# meant to be committed (trademark/copyright, and just not generic).
+Button Images/
+
+__pycache__/
+*.pyc
+.DS_Store

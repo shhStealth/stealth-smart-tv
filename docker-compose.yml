@@ -1,0 +1,28 @@
+# Optional: run the backend with Docker instead of a bare `python3
+# server.py`. No Dockerfile/build step needed — server.py is stdlib-only,
+# so the stock python image runs it directly.
+#
+#   docker compose up -d
+#
+# server.py and public/ are bind-mounted read-only (not baked into an
+# image), so pulling repo updates takes effect on the next restart with no
+# rebuild. data/ (your tiles.json + uploaded icons) is bind-mounted
+# read-write so your apps survive container restarts/recreation.
+#
+# ROKU_IP is optional — only set it if you have a Roku TV and want the ECP
+# fallback described in the README; leave it unset otherwise.
+services:
+  stealth-smart-tv:
+    image: python:3.12-alpine
+    container_name: stealth-smart-tv
+    restart: unless-stopped
+    working_dir: /app
+    volumes:
+      - ./server.py:/app/server.py:ro
+      - ./public:/app/public:ro
+      - ./data:/app/data
+    command: ["python3", "server.py"]
+    ports:
+      - "8765:8765"
+    environment:
+      ROKU_IP: "${ROKU_IP:-}"

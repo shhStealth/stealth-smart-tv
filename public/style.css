@@ -1,0 +1,243 @@
+:root {
+  --bg: #0b0d12;
+  --surface: #161922;
+  --surface-focus: #242a38;
+  --text: #eef1f6;
+  --text-dim: #8c93a3;
+  --accent: #5b8cff;
+  --danger: #ff6b6b;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 48px;
+  gap: 24px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+header h1 {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+#now-playing {
+  font-size: 16px;
+  color: var(--text-dim);
+}
+
+#now-playing .live {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+#status {
+  position: fixed;
+  bottom: 16px;
+  right: 24px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+#status.error { color: var(--danger); }
+
+/* The grid takes up the rest of the screen and centers its tiles in it, so
+   a handful of big tiles read as the main event instead of a small cluster
+   stuck in the top-left corner. */
+.grid {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  align-items: center;
+  gap: 48px;
+  outline: none;
+  min-height: 0;
+}
+
+.tile {
+  position: relative;
+  width: min(16vw, 30vh, 380px);
+  height: min(16vw, 30vh, 380px);
+  background: var(--surface);
+  border: 3px solid transparent;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 500;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+  padding: 20px;
+  text-align: center;
+  overflow: hidden;
+}
+
+.tile.add-tile {
+  background: transparent;
+  border: 3px dashed var(--text-dim);
+  color: var(--text-dim);
+}
+
+.tile.add-tile:focus,
+.tile.add-tile:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.tile-remove {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(11, 13, 18, 0.75);
+  color: var(--text);
+  font-size: 20px;
+  line-height: 32px;
+  text-align: center;
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.tile:hover .tile-remove,
+.tile:focus .tile-remove {
+  opacity: 1;
+}
+
+.tile-remove:hover {
+  background: var(--danger);
+}
+
+.tile img {
+  width: 62%;
+  height: 62%;
+  object-fit: contain;
+  border-radius: 16px;
+  flex-shrink: 0;
+}
+
+.tile .placeholder-icon {
+  font-size: 80px;
+  width: 62%;
+  height: 62%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tile:focus,
+.tile:hover {
+  background: var(--surface-focus);
+  border-color: var(--accent);
+  transform: scale(1.04);
+  outline: none;
+}
+
+.hidden { display: none !important; }
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(11, 13, 18, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.modal-box {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 32px;
+  width: min(90vw, 420px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-box h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.modal-box label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.modal-box input {
+  background: var(--bg);
+  border: 2px solid var(--surface-focus);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 16px;
+}
+
+.modal-box input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.modal-actions button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+#tile-cancel {
+  background: transparent;
+  color: var(--text-dim);
+}
+
+#tile-save {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.form-error {
+  color: var(--danger);
+  font-size: 14px;
+  margin: 0;
+}
