@@ -97,11 +97,11 @@ header h1 {
    stuck in the top-left corner. */
 .grid {
   flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: center;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 1), var(--tile-size, 220px));
+  grid-auto-rows: var(--tile-size, 220px);
   justify-content: center;
-  align-items: center;
+  align-content: center;
   gap: 48px;
   outline: none;
   min-height: 0;
@@ -112,7 +112,6 @@ header h1 {
   position: relative;
   width: var(--tile-size, 220px);
   height: var(--tile-size, 220px);
-  flex-shrink: 0;
   background: var(--surface);
   border: 3px solid transparent;
   border-radius: 24px;

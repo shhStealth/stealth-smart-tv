@@ -155,29 +155,39 @@ function buildAddTile() {
 const MIN_TILE_SIZE = 110;
 const MAX_TILE_SIZE = 380;
 
-// Tiles shrink to fit as more are added, keeping everything on as few rows
-// as possible (one row for as long as that's still legible) rather than
-// picking whatever column count makes tiles biggest overall — that was the
-// previous approach, and it could wrap to a worse (fewer-per-row, taller)
-// layout even when shrinking slightly would've kept everything on one row.
-// Shrinks down to MIN_TILE_SIZE; past that it wraps to more rows (and the
-// grid scrolls, via its own overflow-y, rather than shrinking further).
+// Tries every row count (not just "cram as many onto one row as fit"),
+// and picks whichever lets tiles be biggest — so it happily wraps to a
+// second row sooner if that means bigger tiles. The grid is CSS Grid with
+// an explicit --grid-columns track count (not flex-wrap), so exactly that
+// many tiles land per row regardless of leftover horizontal space — e.g.
+// 5 tiles over 2 rows comes out 3+2, never a lopsided 4+1 (flex-wrap would
+// keep packing tiles into a row as long as they physically fit at the
+// chosen size, ignoring the row count that size was chosen for). The
+// height budget for a given row count is always part of picking its size,
+// so tiles never end up taller than what actually fits — no cutoff top or
+// bottom. Shrinks down to MIN_TILE_SIZE; past that the grid scrolls (its
+// own overflow-y) rather than shrinking further.
 function fitTiles(tileCount) {
   const gap = parseFloat(getComputedStyle(grid).gap) || 48;
   const width = grid.clientWidth;
   const height = grid.clientHeight;
   if (!width || !height || !tileCount) return;
 
-  const maxColumnsAtMinSize = Math.max(1, Math.floor((width + gap) / (MIN_TILE_SIZE + gap)));
-  const columns = Math.min(tileCount, maxColumnsAtMinSize);
-  const rows = Math.ceil(tileCount / columns);
+  let bestSize = MIN_TILE_SIZE;
+  let bestColumns = tileCount;
+  for (let rows = 1; rows <= tileCount; rows++) {
+    const columns = Math.ceil(tileCount / rows);
+    const sizeForWidth = (width - gap * (columns - 1)) / columns;
+    const sizeForHeight = (height - gap * (rows - 1)) / rows;
+    const size = Math.min(sizeForWidth, sizeForHeight, MAX_TILE_SIZE);
+    if (size > bestSize) {
+      bestSize = size;
+      bestColumns = columns;
+    }
+  }
 
-  let size = (width - gap * (columns - 1)) / columns;
-  size = Math.min(size, MAX_TILE_SIZE);
-  size = Math.min(size, (height - gap * (rows - 1)) / rows);
-  size = Math.max(size, MIN_TILE_SIZE);
-
-  grid.style.setProperty("--tile-size", `${size}px`);
+  grid.style.setProperty("--tile-size", `${bestSize}px`);
+  grid.style.setProperty("--grid-columns", bestColumns);
 }
 
 // Keep the add-tile out of the way once you have apps, so it isn't
