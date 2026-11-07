@@ -94,24 +94,31 @@ header h1 {
 
 /* The grid takes up the rest of the screen and centers its tiles in it, so
    a handful of big tiles read as the main event instead of a small cluster
-   stuck in the top-left corner. */
+   stuck in the top-left corner. Width is set in JS to exactly fit the
+   chosen column count (see fitTiles in app.js) and then centered via
+   margin:auto — with flex-wrap, that makes justify-content:center apply
+   per row, so a ragged last row (e.g. 2 tiles under a row of 3) centers
+   itself under the full rows above instead of hugging the left edge. */
 .grid {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(var(--grid-columns, 1), var(--tile-size, 220px));
-  grid-auto-rows: var(--tile-size, 220px);
+  display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   align-content: center;
+  align-items: center;
   gap: 48px;
   outline: none;
   min-height: 0;
   overflow-y: auto;
+  width: var(--grid-width, 100%);
+  margin: 0 auto;
 }
 
 .tile {
   position: relative;
   width: var(--tile-size, 220px);
   height: var(--tile-size, 220px);
+  flex-shrink: 0;
   background: var(--surface);
   border: 3px solid transparent;
   border-radius: 24px;

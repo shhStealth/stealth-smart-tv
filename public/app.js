@@ -157,17 +157,22 @@ const MAX_TILE_SIZE = 380;
 
 // Tries every row count (not just "cram as many onto one row as fit"),
 // and picks whichever lets tiles be biggest — so it happily wraps to a
-// second row sooner if that means bigger tiles. The grid is CSS Grid with
-// an explicit --grid-columns track count (not flex-wrap), so exactly that
-// many tiles land per row regardless of leftover horizontal space — e.g.
-// 5 tiles over 2 rows comes out 3+2, never a lopsided 4+1 (flex-wrap would
-// keep packing tiles into a row as long as they physically fit at the
-// chosen size, ignoring the row count that size was chosen for). The
-// height budget for a given row count is always part of picking its size,
-// so tiles never end up taller than what actually fits — no cutoff top or
-// bottom. Shrinks down to MIN_TILE_SIZE; past that the grid scrolls (its
-// own overflow-y) rather than shrinking further.
+// second row sooner if that means bigger tiles. The grid's own width is
+// then set (via --grid-width) to exactly fit that many columns, rather
+// than the full available width — with flex-wrap, that makes a ragged
+// last row (e.g. 2 under a row of 3) center itself under the full rows
+// above, instead of packing extra tiles in wherever they still fit (which
+// a full-width flex-wrap container would do, ignoring the row count a
+// size was chosen for) or hugging the left edge with empty space on the
+// right. The height budget for a given row count is always part of
+// picking its size, so tiles never end up taller than what actually fits
+// — no cutoff top or bottom. Shrinks down to MIN_TILE_SIZE; past that the
+// grid scrolls (its own overflow-y) rather than shrinking further.
 function fitTiles(tileCount) {
+  // Reset to full width before measuring — otherwise a previous call's
+  // narrower --grid-width (set below) would still be in effect, and we'd
+  // measure our own last output instead of what's actually available.
+  grid.style.removeProperty("--grid-width");
   const gap = parseFloat(getComputedStyle(grid).gap) || 48;
   const width = grid.clientWidth;
   const height = grid.clientHeight;
@@ -187,7 +192,7 @@ function fitTiles(tileCount) {
   }
 
   grid.style.setProperty("--tile-size", `${bestSize}px`);
-  grid.style.setProperty("--grid-columns", bestColumns);
+  grid.style.setProperty("--grid-width", `${bestColumns * bestSize + (bestColumns - 1) * gap}px`);
 }
 
 // Keep the add-tile out of the way once you have apps, so it isn't
