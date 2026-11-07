@@ -39,6 +39,11 @@ Your tiles live in `data/tiles.json` and `data/icons/` (both
 git-ignored — they're your data, not part of the repo). Back up or copy
 that `data/` folder to carry your setup to a new machine.
 
+Tiles shrink automatically as you add more, so they keep fitting the
+screen without you needing to do anything — down to a minimum legible
+size, past which the grid scrolls (mouse wheel or touch) instead of
+shrinking further.
+
 ## Running with Docker
 
 `docker-compose.yml` runs the stock `python:3.12-alpine` image directly —
@@ -139,9 +144,17 @@ a D-pad-to-keyboard mapper. Mouse/touch also works directly.
 
 ## Security note
 
-There's no authentication on the backend — it's meant for a trusted home
-network (or something like Tailscale), not the open internet. Anyone who
-can reach the port can add/remove tiles. Don't port-forward it.
+There's no authentication on *viewing* the dashboard — it's meant for a
+trusted home network (or something like Tailscale), not the open
+internet. Don't port-forward it.
+
+Adding/removing tiles can optionally be gated with a shared token: set
+`EDIT_TOKEN` (env var) to any value you choose, and the dashboard will
+prompt for it the first time you add or remove a tile from a given
+browser, then remember it. Leave `EDIT_TOKEN` unset (the default) and
+anyone who can reach the dashboard can edit tiles with no prompt at all,
+same as viewing — fine for a single-household LAN, less fine if you're
+exposing this more broadly.
 
 ## Also worth doing, separately
 

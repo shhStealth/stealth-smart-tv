@@ -11,6 +11,11 @@
 #
 # ROKU_IP is optional — only set it if you have a Roku TV and want the ECP
 # fallback described in the README; leave it unset otherwise.
+#
+# EDIT_TOKEN is also optional — if set, adding/removing a tile requires this
+# value (the dashboard prompts for it once per browser); viewing the
+# dashboard is never gated by it. Leave unset to allow anyone who can reach
+# this backend to edit tiles with no prompt, same as viewing.
 services:
   stealth-smart-tv:
     image: python:3.12-alpine
@@ -26,3 +31,4 @@ services:
       - "8765:8765"
     environment:
       ROKU_IP: "${ROKU_IP:-}"
+      EDIT_TOKEN: "${EDIT_TOKEN:-}"

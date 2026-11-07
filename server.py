@@ -14,13 +14,18 @@ Usage:
     # then open http://localhost:8765 in a kiosk/fullscreen browser window
 
 Config via env vars:
-    ROKU_IP   - TV's LAN IP, only needed if you use the ECP fallback (optional)
-    PORT      - local port to listen on (default 8765)
+    EDIT_TOKEN - if set, required (as an X-Edit-Token header) to add/remove
+                 tiles; viewing the dashboard is never gated by this.
+                 Unset by default — anyone who can reach the backend can
+                 edit tiles, same as viewing. (optional)
+    ROKU_IP    - TV's LAN IP, only needed if you use the ECP fallback (optional)
+    PORT       - local port to listen on (default 8765)
 
 No pip installs needed — stdlib only, including a small hand-rolled
 multipart/form-data parser for icon uploads (avoids depending on the
 deprecated `cgi` module).
 """
+import hmac
 import http.server
 import json
 import os
@@ -32,6 +37,7 @@ import uuid
 import xml.etree.ElementTree as ET
 from http import HTTPStatus
 
+EDIT_TOKEN = os.environ.get("EDIT_TOKEN", "")
 ROKU_IP = os.environ.get("ROKU_IP", "")
 ROKU_PORT = 8060
 ROKU_BASE = f"http://{ROKU_IP}:{ROKU_PORT}"
@@ -179,10 +185,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     # ---- user-managed tiles ----
 
+    def _authorized(self):
+        if not EDIT_TOKEN:
+            return True
+        return hmac.compare_digest(self.headers.get("X-Edit-Token", ""), EDIT_TOKEN)
+
     def _list_tiles(self):
         self._json(200, {"tiles": load_tiles()})
 
     def _create_tile(self):
+        if not self._authorized():
+            return self._json(401, {"error": "invalid or missing edit token"})
         content_type = self.headers.get("Content-Type", "")
         if not content_type.startswith("multipart/form-data"):
             return self._json(400, {"error": "expected multipart/form-data"})
@@ -228,6 +241,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self._json(200, {"tile": tile})
 
     def _delete_tile(self, tile_id):
+        if not self._authorized():
+            return self._json(401, {"error": "invalid or missing edit token"})
         with TILES_LOCK:
             tiles = load_tiles()
             removed = [t for t in tiles if t.get("id") == tile_id]

@@ -11,6 +11,32 @@ const tileFormError = document.getElementById("tile-form-error");
 
 let tiles = [];
 
+function getStoredToken() {
+  try { return localStorage.getItem("editToken") || ""; } catch { return ""; }
+}
+
+function setStoredToken(token) {
+  try { localStorage.setItem("editToken", token); } catch { /* ignore */ }
+}
+
+// Wraps fetch for the mutating endpoints (add/remove a tile). Viewing the
+// dashboard is never gated, so this is only used for POST/DELETE. If the
+// backend has EDIT_TOKEN set and we get a 401, prompt once and retry; the
+// token is then cached in this browser's localStorage so it's not asked
+// again until it stops matching (e.g. the backend's token changed).
+async function authedFetch(url, options = {}) {
+  options.headers = { ...(options.headers || {}), "X-Edit-Token": getStoredToken() };
+  let res = await fetch(url, options);
+  if (res.status === 401) {
+    const token = prompt("Enter the edit token to add/remove apps:");
+    if (token === null) return res;
+    setStoredToken(token);
+    options.headers["X-Edit-Token"] = token;
+    res = await fetch(url, options);
+  }
+  return res;
+}
+
 function setStatus(msg, isError) {
   statusEl.textContent = msg;
   statusEl.classList.toggle("error", !!isError);
@@ -41,7 +67,7 @@ tileForm.addEventListener("submit", async (e) => {
   if (tileIconInput.files[0]) formData.append("icon", tileIconInput.files[0]);
 
   try {
-    const res = await fetch("/api/tiles", { method: "POST", body: formData });
+    const res = await authedFetch("/api/tiles", { method: "POST", body: formData });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "couldn't add that app");
     tiles.push(data.tile);
@@ -56,7 +82,7 @@ tileForm.addEventListener("submit", async (e) => {
 async function removeTile(tile) {
   if (!confirm(`Remove "${tile.name}"?`)) return;
   try {
-    const res = await fetch(`/api/tiles/${tile.id}`, { method: "DELETE" });
+    const res = await authedFetch(`/api/tiles/${tile.id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("couldn't remove that app");
     tiles = tiles.filter((t) => t.id !== tile.id);
     render();
@@ -118,12 +144,41 @@ function buildAddTile() {
   return el;
 }
 
+const MIN_TILE_SIZE = 110;
+const MAX_TILE_SIZE = 380;
+
+// Tiles shrink to fit as more are added (down to MIN_TILE_SIZE, below which
+// the grid scrolls instead of shrinking further) — tries every column count
+// and keeps whichever lets tiles be biggest while still fitting both the
+// grid's width and height.
+function fitTiles(tileCount) {
+  const style = getComputedStyle(grid);
+  const gap = parseFloat(style.gap) || 48;
+  const width = grid.clientWidth;
+  const height = grid.clientHeight;
+  if (!width || !height || !tileCount) return;
+
+  let best = MIN_TILE_SIZE;
+  for (let columns = 1; columns <= tileCount; columns++) {
+    const rows = Math.ceil(tileCount / columns);
+    const sizeForWidth = (width - gap * (columns - 1)) / columns;
+    const sizeForHeight = (height - gap * (rows - 1)) / rows;
+    const size = Math.min(sizeForWidth, sizeForHeight);
+    if (size > best) best = size;
+  }
+  best = Math.max(MIN_TILE_SIZE, Math.min(MAX_TILE_SIZE, best));
+  grid.style.setProperty("--tile-size", `${best}px`);
+}
+
 function render() {
   grid.innerHTML = "";
   tiles.forEach((tile) => grid.appendChild(buildTile(tile)));
   grid.appendChild(buildAddTile());
+  fitTiles(tiles.length + 1);
   grid.querySelector(".tile")?.focus();
 }
+
+window.addEventListener("resize", () => fitTiles(tiles.length + 1));
 
 // Arrow-key / Enter navigation, for a wireless keyboard or a controller
 // mapped to arrow keys (most "d-pad to keyboard" utilities do this).
