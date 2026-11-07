@@ -41,6 +41,12 @@ header h1 {
   letter-spacing: 0.5px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 #now-playing {
   font-size: 16px;
   color: var(--text-dim);
@@ -49,6 +55,31 @@ header h1 {
 #now-playing .live {
   color: var(--accent);
   font-weight: 600;
+}
+
+.edit-toggle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--surface-focus);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 16px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.edit-toggle:hover,
+.edit-toggle:focus {
+  border-color: var(--accent);
+  color: var(--text);
+  outline: none;
+}
+
+.edit-toggle.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 #status {

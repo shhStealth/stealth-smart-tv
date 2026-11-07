@@ -10,6 +10,14 @@ const tileIconInput = document.getElementById("tile-icon");
 const tileFormError = document.getElementById("tile-form-error");
 
 let tiles = [];
+let editMode = false;
+
+const editToggle = document.getElementById("edit-toggle");
+editToggle.addEventListener("click", () => {
+  editMode = !editMode;
+  editToggle.classList.toggle("active", editMode);
+  render();
+});
 
 function getStoredToken() {
   try { return localStorage.getItem("editToken") || ""; } catch { return ""; }
@@ -170,15 +178,22 @@ function fitTiles(tileCount) {
   grid.style.setProperty("--tile-size", `${best}px`);
 }
 
+// Keep the add-tile out of the way once you have apps, so it isn't
+// permanently taking up a grid slot — except on a totally empty
+// dashboard, where there'd otherwise be no visible way in at all.
+function shouldShowAddTile() {
+  return editMode || tiles.length === 0;
+}
+
 function render() {
   grid.innerHTML = "";
   tiles.forEach((tile) => grid.appendChild(buildTile(tile)));
-  grid.appendChild(buildAddTile());
-  fitTiles(tiles.length + 1);
+  if (shouldShowAddTile()) grid.appendChild(buildAddTile());
+  fitTiles(tiles.length + (shouldShowAddTile() ? 1 : 0));
   grid.querySelector(".tile")?.focus();
 }
 
-window.addEventListener("resize", () => fitTiles(tiles.length + 1));
+window.addEventListener("resize", () => fitTiles(tiles.length + (shouldShowAddTile() ? 1 : 0)));
 
 // Arrow-key / Enter navigation, for a wireless keyboard or a controller
 // mapped to arrow keys (most "d-pad to keyboard" utilities do this).
