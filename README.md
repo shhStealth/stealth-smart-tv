@@ -99,6 +99,24 @@ machine is on 24/7, and on the others just set `DASHBOARD_HOST` in
 copy needed on the other machines at all, just `start.sh`, `stop.sh`, and
 the one-line override.
 
+## Optional: NHL "next game" widget
+
+Set `NHL_TEAM` to a team's three-letter code (`TOR`, `EDM`, `MTL`, `NYR`,
+...) and the header shows a small card for that team: record and division
+standing, the next game (or the live score while a game is on, or the
+final score for a few hours after), and the two games after that. Times
+show in each viewing device's own time zone.
+
+The backend fetches this from the NHL's public stats API
+(`api-web.nhle.com`, no key needed) and caches it, so it's a handful of
+requests an hour no matter how many TVs are open, and the browser never
+talks to the NHL directly. Leave `NHL_TEAM` unset (the default) and the
+widget never appears.
+
+```sh
+NHL_TEAM=TOR python3 server.py
+```
+
 ## Optional: Roku TV integration
 
 If one of your TVs is itself a Roku TV, set `ROKU_IP` to its LAN IP (and

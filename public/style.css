@@ -29,8 +29,9 @@ body {
 
 header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  gap: 24px;
   flex-shrink: 0;
 }
 
@@ -80,6 +81,132 @@ header h1 {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
+}
+
+/* ---- NHL "next game" widget (nhl.js; only shown when NHL_TEAM is set) ---- */
+
+.nhl-widget {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+  padding: 10px 20px;
+  background: var(--surface);
+  border-radius: 16px;
+}
+
+.nhl-team,
+.nhl-side,
+.nhl-upcoming li {
+  display: flex;
+  align-items: center;
+}
+
+.nhl-team { gap: 12px; }
+
+.nhl-team-logo { width: 52px; height: 52px; object-fit: contain; }
+
+.nhl-team-name {
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nhl-team-meta,
+.nhl-status,
+.nhl-upcoming {
+  font-size: 14px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.nhl-team-meta { margin-top: 2px; }
+
+.nhl-featured,
+.nhl-upcoming {
+  border-left: 1px solid var(--surface-focus);
+  padding-left: 20px;
+}
+
+.nhl-featured {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.nhl-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nhl-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  animation: nhl-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes nhl-pulse {
+  50% { opacity: 0.3; }
+}
+
+.nhl-matchup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.nhl-side {
+  gap: 8px;
+  font-size: 18px;
+  white-space: nowrap;
+}
+
+/* Home team mirrors the away side so logos sit on the outside and the
+   scores meet in the middle: [logo] Oilers 2 – 3 Maple Leafs [logo] */
+.nhl-side-home { flex-direction: row-reverse; }
+
+.nhl-logo { width: 36px; height: 36px; object-fit: contain; }
+
+.nhl-score {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.nhl-at { color: var(--text-dim); font-size: 13px; }
+
+.nhl-upcoming {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nhl-upcoming li { gap: 6px; }
+
+.nhl-upcoming-date { min-width: 96px; }
+
+.nhl-upcoming-team { color: var(--text); }
+
+.nhl-logo-sm { width: 22px; height: 22px; object-fit: contain; }
+
+/* Not enough room beside the title: give the widget its own row under it,
+   and drop the extra-games list first. */
+@media (max-width: 1100px) {
+  header { flex-wrap: wrap; }
+  .nhl-widget { order: 3; flex-basis: 100%; justify-content: center; }
+  .nhl-upcoming { display: none; }
+}
+
+@media (max-width: 560px) {
+  .nhl-widget { flex-wrap: wrap; gap: 10px 16px; }
+  .nhl-featured { border-left: none; padding-left: 0; }
+  .nhl-team-meta { white-space: normal; }
 }
 
 #status {

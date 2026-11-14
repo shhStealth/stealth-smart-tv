@@ -215,7 +215,22 @@ function render() {
   grid.querySelector(".tile")?.focus();
 }
 
-window.addEventListener("resize", () => fitTiles(tiles.length + (shouldShowAddTile() ? 1 : 0)));
+function refitTiles() {
+  fitTiles(tiles.length + (shouldShowAddTile() ? 1 : 0));
+}
+
+window.addEventListener("resize", refitTiles);
+
+// The grid's height also changes without a window resize, e.g. when a
+// header widget (nhl.js) loads in or changes size and squeezes the grid.
+// Only react to height: fitTiles itself changes the grid's width, so
+// reacting to width too would just re-trigger on our own output.
+let lastGridHeight = 0;
+new ResizeObserver(() => {
+  if (grid.clientHeight === lastGridHeight) return;
+  lastGridHeight = grid.clientHeight;
+  refitTiles();
+}).observe(grid);
 
 // Arrow-key / Enter navigation, for a wireless keyboard or a controller
 // mapped to arrow keys (most "d-pad to keyboard" utilities do this).

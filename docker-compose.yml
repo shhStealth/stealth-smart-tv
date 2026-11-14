@@ -16,6 +16,9 @@
 # value (the dashboard prompts for it once per browser); viewing the
 # dashboard is never gated by it. Leave unset to allow anyone who can reach
 # this backend to edit tiles with no prompt, same as viewing.
+#
+# NHL_TEAM is optional too — a team code like TOR shows a "next game" widget
+# in the header (see the README); leave unset to hide it.
 services:
   stealth-smart-tv:
     image: python:3.12-alpine
@@ -32,3 +35,4 @@ services:
     environment:
       ROKU_IP: "${ROKU_IP:-}"
       EDIT_TOKEN: "${EDIT_TOKEN:-}"
+      NHL_TEAM: "${NHL_TEAM:-}"
