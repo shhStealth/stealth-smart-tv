@@ -154,6 +154,7 @@ function buildAddTile() {
 
 const MIN_TILE_SIZE = 110;
 const MAX_TILE_SIZE = 380;
+const GRID_PADDING = 16; // matches .grid's padding in style.css
 
 // Tries every row count (not just "cram as many onto one row as fit"),
 // and picks whichever lets tiles be biggest — so it happily wraps to a
@@ -174,8 +175,11 @@ function fitTiles(tileCount) {
   // measure our own last output instead of what's actually available.
   grid.style.removeProperty("--grid-width");
   const gap = parseFloat(getComputedStyle(grid).gap) || 48;
-  const width = grid.clientWidth;
-  const height = grid.clientHeight;
+  // clientWidth/Height include the grid's own padding, so subtract it back
+  // out — tiles are sized to fit the space inside that padding, leaving
+  // the padding itself as untouched breathing room around the cluster.
+  const width = grid.clientWidth - GRID_PADDING * 2;
+  const height = grid.clientHeight - GRID_PADDING * 2;
   if (!width || !height || !tileCount) return;
 
   let bestSize = MIN_TILE_SIZE;
@@ -191,8 +195,9 @@ function fitTiles(tileCount) {
     }
   }
 
+  const contentWidth = bestColumns * bestSize + (bestColumns - 1) * gap;
   grid.style.setProperty("--tile-size", `${bestSize}px`);
-  grid.style.setProperty("--grid-width", `${bestColumns * bestSize + (bestColumns - 1) * gap}px`);
+  grid.style.setProperty("--grid-width", `${contentWidth + GRID_PADDING * 2}px`);
 }
 
 // Keep the add-tile out of the way once you have apps, so it isn't

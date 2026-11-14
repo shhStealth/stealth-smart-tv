@@ -98,7 +98,12 @@ header h1 {
    chosen column count (see fitTiles in app.js) and then centered via
    margin:auto — with flex-wrap, that makes justify-content:center apply
    per row, so a ragged last row (e.g. 2 tiles under a row of 3) centers
-   itself under the full rows above instead of hugging the left edge. */
+   itself under the full rows above instead of hugging the left edge.
+   Padding here is breathing room for the hover/focus scale(1.04) on
+   .tile — without it, an edge tile has nowhere to grow into and gets
+   clipped by overflow-y:auto (which, per spec, forces overflow-x to also
+   act as auto rather than visible when the two are set differently).
+   fitTiles accounts for this same padding when sizing tiles. */
 .grid {
   flex: 1;
   display: flex;
@@ -112,6 +117,7 @@ header h1 {
   overflow-y: auto;
   width: var(--grid-width, 100%);
   margin: 0 auto;
+  padding: 16px;
 }
 
 .tile {
