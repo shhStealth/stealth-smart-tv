@@ -17,8 +17,9 @@
 # dashboard is never gated by it. Leave unset to allow anyone who can reach
 # this backend to edit tiles with no prompt, same as viewing.
 #
-# NHL_TEAM is optional too — a team code like TOR shows a "next game" widget
-# in the header (see the README); leave unset to hide it.
+# NHL_TEAM is optional too — a team code like TOR for the header's "next
+# game" widget to start with. The team can be changed (or the widget
+# hidden) from the dashboard's edit mode, which overrides this; see README.
 services:
   stealth-smart-tv:
     image: python:3.12-alpine

@@ -101,21 +101,24 @@ the one-line override.
 
 ## Optional: NHL "next game" widget
 
-Set `NHL_TEAM` to a team's three-letter code (`TOR`, `EDM`, `MTL`, `NYR`,
-...) and the header shows a small card for that team: record and division
+The header can show a small card for one NHL team: record and division
 standing, the next game (or the live score while a game is on, or the
 final score for a few hours after), and the two games after that. Times
 show in each viewing device's own time zone.
 
+To turn it on or change the team, click the edit button (top right), then
+click the widget (or the "Add NHL team" card that stands in for it) and
+pick from all 32 teams; "Hide widget" turns it off again. The choice is
+saved in `data/settings.json`, so every screen shows the same team, and
+it's gated by `EDIT_TOKEN` the same way adding or removing tiles is.
+
+`NHL_TEAM` (a team code like `TOR`) is an optional starting default for
+a fresh install; whatever's picked in the dashboard overrides it.
+
 The backend fetches this from the NHL's public stats API
 (`api-web.nhle.com`, no key needed) and caches it, so it's a handful of
 requests an hour no matter how many TVs are open, and the browser never
-talks to the NHL directly. Leave `NHL_TEAM` unset (the default) and the
-widget never appears.
-
-```sh
-NHL_TEAM=TOR python3 server.py
-```
+talks to the NHL directly.
 
 ## Optional: Roku TV integration
 

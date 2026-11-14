@@ -16,6 +16,10 @@ const editToggle = document.getElementById("edit-toggle");
 editToggle.addEventListener("click", () => {
   editMode = !editMode;
   editToggle.classList.toggle("active", editMode);
+  // Other parts of the page (e.g. the NHL widget in nhl.js) key their own
+  // edit affordances off this class instead of reaching into app.js state.
+  document.body.classList.toggle("editing", editMode);
+  document.dispatchEvent(new CustomEvent("editmodechange", { detail: editMode }));
   render();
 });
 

@@ -195,6 +195,88 @@ header h1 {
 
 .nhl-logo-sm { width: 22px; height: 22px; object-fit: contain; }
 
+/* Edit mode: the widget becomes a button that opens the team picker. */
+.nhl-widget.nhl-editable {
+  cursor: pointer;
+  outline: 2px dashed var(--text-dim);
+  outline-offset: 2px;
+}
+
+.nhl-widget.nhl-editable:hover,
+.nhl-widget.nhl-editable:focus {
+  outline: 2px solid var(--accent);
+  background: var(--surface-focus);
+}
+
+.nhl-add {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  font-size: 16px;
+  color: var(--text-dim);
+}
+
+.nhl-add-plus { font-size: 24px; line-height: 1; }
+
+/* Doubled class so it beats the generic .modal-box width further down. */
+.modal-box.team-modal-box {
+  width: min(92vw, 1180px);
+  max-height: 86vh;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(124px, 1fr));
+  gap: 10px;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 4px;
+}
+
+.team-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 6px;
+  background: var(--bg);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.team-option:hover,
+.team-option:focus {
+  border-color: var(--accent);
+  background: var(--surface-focus);
+  outline: none;
+}
+
+.team-option.current {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.team-option-logo { width: 60px; height: 60px; object-fit: contain; }
+
+.team-loading { color: var(--text-dim); margin: 0; }
+
+#team-hide {
+  margin-right: auto;
+  background: transparent;
+  color: var(--danger);
+}
+
+#team-cancel {
+  background: var(--surface-focus);
+  color: var(--text);
+}
+
 /* Not enough room beside the title: give the widget its own row under it,
    and drop the extra-games list first. */
 @media (max-width: 1100px) {

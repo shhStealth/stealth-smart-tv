@@ -12,7 +12,7 @@
     <section id="nhl-widget" class="nhl-widget hidden" aria-label="Next game"></section>
     <div class="header-right">
       <div id="now-playing">On TV: &mdash;</div>
-      <button id="edit-toggle" class="edit-toggle" type="button" title="Add or remove apps">&#9998;</button>
+      <button id="edit-toggle" class="edit-toggle" type="button" title="Edit apps and widgets">&#9998;</button>
     </div>
   </header>
 
@@ -41,6 +41,18 @@
         <button type="submit" id="tile-save">Add</button>
       </div>
     </form>
+  </div>
+
+  <div id="team-modal" class="modal hidden">
+    <div class="modal-box team-modal-box" role="dialog" aria-labelledby="team-modal-title">
+      <h2 id="team-modal-title">Choose an NHL team</h2>
+      <p id="team-error" class="form-error hidden"></p>
+      <div id="team-grid" class="team-grid"></div>
+      <div class="modal-actions">
+        <button type="button" id="team-hide">Hide widget</button>
+        <button type="button" id="team-cancel">Cancel</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

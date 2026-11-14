@@ -1,6 +1,9 @@
 // Optional "next game" widget for one NHL team, shown in the header.
-// The backend only enables it when NHL_TEAM is set (see server.py); with
-// it unset, /api/nhl answers {enabled:false} and this stays hidden for good.
+// Which team (or none) is a server-side setting, so every screen shows the
+// same one: picked in edit mode by clicking the widget, defaulting to the
+// backend's NHL_TEAM env var. With no team, /api/nhl answers
+// {enabled:false} and the widget stays hidden, except in edit mode, where
+// an "Add NHL team" card stands in for it so there's a way back.
 //
 // What goes in the big middle slot:
 //   - a game in progress (live score, period, clock), else
@@ -10,13 +13,17 @@
 
 (() => {
   const widget = document.getElementById("nhl-widget");
+  const teamModal = document.getElementById("team-modal");
+  const teamGrid = document.getElementById("team-grid");
+  const teamError = document.getElementById("team-error");
   const POLL_MS = 60 * 1000;
   // How long a finished game stays featured before the next one takes
   // over — long enough to catch the score after a late game, gone by the
   // next afternoon.
   const SHOW_FINAL_FOR_MS = 12 * 60 * 60 * 1000;
   const LIVE_STATES = ["LIVE", "CRIT"];
-  let pollTimer = null;
+  let enabled = false;
+  let lastData = null;
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -127,7 +134,32 @@
     return { featured: upcoming[0] || null, rest: upcoming.slice(1) };
   }
 
-  function render(data) {
+  const isEditing = () => document.body.classList.contains("editing");
+
+  function renderEmpty() {
+    const add = el("div", "nhl-add");
+    add.appendChild(el("span", "nhl-add-plus", "+"));
+    add.appendChild(document.createTextNode("Add NHL team"));
+    widget.replaceChildren(add);
+  }
+
+  // Draws whatever we know, and decides visibility: a team's card if one
+  // is set, the "Add NHL team" card if not but we're editing, else nothing.
+  function render() {
+    widget.classList.toggle("nhl-editable", isEditing());
+    widget.tabIndex = isEditing() ? 0 : -1;
+    if (enabled && lastData) {
+      renderTeam(lastData);
+      widget.classList.remove("hidden");
+    } else if (!enabled && isEditing()) {
+      renderEmpty();
+      widget.classList.remove("hidden");
+    } else {
+      widget.classList.add("hidden");
+    }
+  }
+
+  function renderTeam(data) {
     const { featured, rest } = pickFeatured(data);
 
     const team = el("div", "nhl-team");
@@ -140,24 +172,109 @@
 
     widget.replaceChildren(team, buildFeatured(featured));
     if (rest.length) widget.appendChild(buildUpcomingList(rest.slice(0, 2)));
-    widget.classList.remove("hidden");
   }
 
+  // Keeps polling even with no team set, so a team picked on another
+  // screen shows up here within a minute.
   async function refresh() {
     try {
       const res = await fetch("/api/nhl");
       const data = await res.json();
       if (data.enabled === false) {
-        widget.classList.add("hidden");
-        clearInterval(pollTimer);
-        return;
+        enabled = false;
+        lastData = null;
+      } else if (res.ok) {
+        enabled = true;
+        lastData = data;
       }
-      if (res.ok) render(data);
+      // A 502 (NHL unreachable) keeps whatever we last had.
     } catch {
       // Network blip — keep showing whatever we last rendered.
     }
+    render();
   }
 
+  // ---- team picker (edit mode only) ----
+
+  let teamsCache = null;
+
+  function showTeamError(msg) {
+    teamError.textContent = msg;
+    teamError.classList.remove("hidden");
+  }
+
+  async function saveTeam(abbrev) {
+    teamError.classList.add("hidden");
+    try {
+      const res = await authedFetch("/api/nhl/team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ team: abbrev }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "couldn't save that team");
+      closePicker();
+      lastData = null;
+      enabled = !!abbrev;
+      render();
+      await refresh();
+    } catch (err) {
+      showTeamError(err.message);
+    }
+  }
+
+  async function openPicker() {
+    teamError.classList.add("hidden");
+    teamGrid.replaceChildren(el("p", "team-loading", "Loading teams…"));
+    teamModal.classList.remove("hidden");
+    try {
+      const res = await fetch("/api/nhl/teams");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "couldn't load the team list");
+      teamsCache = data;
+    } catch (err) {
+      if (!teamsCache) {
+        teamGrid.replaceChildren();
+        showTeamError(`Couldn't load teams: ${err.message}`);
+        return;
+      }
+    }
+    const buttons = teamsCache.teams.map((team) => {
+      const btn = el("button", "team-option");
+      btn.type = "button";
+      btn.classList.toggle("current", team.abbrev === teamsCache.current);
+      btn.appendChild(logo(team.logo, "team-option-logo"));
+      btn.appendChild(el("span", null, team.name));
+      btn.addEventListener("click", () => saveTeam(team.abbrev));
+      return btn;
+    });
+    teamGrid.replaceChildren(...buttons);
+    (teamGrid.querySelector(".current") || buttons[0])?.focus();
+  }
+
+  function closePicker() {
+    teamModal.classList.add("hidden");
+  }
+
+  widget.addEventListener("click", () => {
+    if (isEditing()) openPicker();
+  });
+  widget.addEventListener("keydown", (e) => {
+    if (isEditing() && (e.key === "Enter" || e.key === " ")) {
+      e.preventDefault();
+      openPicker();
+    }
+  });
+  document.getElementById("team-cancel").addEventListener("click", closePicker);
+  document.getElementById("team-hide").addEventListener("click", () => saveTeam(""));
+  teamModal.addEventListener("click", (e) => {
+    if (e.target === teamModal) closePicker();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !teamModal.classList.contains("hidden")) closePicker();
+  });
+  document.addEventListener("editmodechange", render);
+
   refresh();
-  pollTimer = setInterval(refresh, POLL_MS);
+  setInterval(refresh, POLL_MS);
 })();

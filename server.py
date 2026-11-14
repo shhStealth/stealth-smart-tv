@@ -19,8 +19,11 @@ Config via env vars:
                  Unset by default — anyone who can reach the backend can
                  edit tiles, same as viewing. (optional)
     ROKU_IP    - TV's LAN IP, only needed if you use the ECP fallback (optional)
-    NHL_TEAM   - an NHL team's three-letter code (e.g. TOR) to show a "next
-                 game" widget in the header; hidden when unset. (optional)
+    NHL_TEAM   - an NHL team's three-letter code (e.g. TOR) for the header's
+                 "next game" widget to start out showing. Only a default:
+                 once a team is picked (or the widget hidden) from the
+                 dashboard's edit mode, that choice is saved to
+                 data/settings.json and wins. (optional)
     PORT       - local port to listen on (default 8765)
 
 No pip installs needed — stdlib only, including a small hand-rolled
@@ -51,6 +54,7 @@ PUBLIC_DIR = os.path.join(PROJECT_ROOT, "public")
 DATA_DIR = os.path.join(PROJECT_ROOT, "data")
 ICONS_DIR = os.path.join(DATA_DIR, "icons")
 TILES_FILE = os.path.join(DATA_DIR, "tiles.json")
+SETTINGS_FILE = os.path.join(DATA_DIR, "settings.json")
 LISTEN_PORT = int(os.environ.get("PORT", "8765"))
 
 MAX_ICON_BYTES = 2 * 1024 * 1024  # 2 MB
@@ -59,6 +63,7 @@ MAX_UPLOAD_BYTES = MAX_ICON_BYTES + 64 * 1024  # a little headroom for form over
 os.makedirs(ICONS_DIR, exist_ok=True)
 
 TILES_LOCK = threading.Lock()
+SETTINGS_LOCK = threading.Lock()
 
 IMAGE_CONTENT_TYPE_BY_EXT = {
     "png": "image/png",
@@ -84,6 +89,31 @@ def save_tiles(tiles):
     with open(tmp, "w") as f:
         json.dump(tiles, f, indent=2)
     os.replace(tmp, TILES_FILE)
+
+
+def load_settings():
+    if not os.path.isfile(SETTINGS_FILE):
+        return {}
+    try:
+        with open(SETTINGS_FILE, "r") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def save_settings(settings):
+    tmp = SETTINGS_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(settings, f, indent=2)
+    os.replace(tmp, SETTINGS_FILE)
+
+
+def current_nhl_team():
+    """The team picked in the dashboard, else the NHL_TEAM env default.
+    A saved empty string means "hidden" and deliberately overrides the env."""
+    saved = load_settings().get("nhlTeam")
+    return saved if isinstance(saved, str) else NHL_TEAM
 
 
 def sniff_image_ext(data):
@@ -136,7 +166,7 @@ def roku_request(path, method="GET"):
         return resp.status, resp.read(), resp.headers.get("Content-Type", "")
 
 
-# ---- optional NHL "next game" widget (only used if NHL_TEAM is set) ----
+# ---- optional NHL "next game" widget (hidden until a team is picked) ----
 #
 # The NHL's public stats API doesn't send CORS headers, so the browser
 # can't call it directly — the backend fetches it, trims it down to what
@@ -223,6 +253,21 @@ def _nhl_game(game, team):
         "period": _nhl_period_label(game.get("periodDescriptor")),
         "decidedIn": outcome if outcome in ("OT", "SO") else None,
     }
+
+
+def nhl_teams():
+    """Every current NHL team, from the standings (which, unlike the
+    schedule endpoints, lists all 32 in one call)."""
+    standings = nhl_get("/standings/now", NHL_STANDINGS_TTL).get("standings", [])
+    teams = [
+        {
+            "abbrev": (row.get("teamAbbrev") or {}).get("default"),
+            "name": (row.get("teamName") or {}).get("default"),
+            "logo": row.get("teamLogoDark") or row.get("teamLogo"),
+        }
+        for row in standings
+    ]
+    return sorted((t for t in teams if t["abbrev"] and t["name"]), key=lambda t: t["name"])
 
 
 def build_nhl_summary(team):
@@ -318,6 +363,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return self._list_tiles()
         if self.path == "/api/nhl":
             return self._nhl_summary()
+        if self.path == "/api/nhl/teams":
+            return self._nhl_teams()
         if self.path.startswith("/api/icon/"):
             return self._proxy_icon(self.path[len("/api/icon/"):])
         if self.path.startswith("/data/icons/"):
@@ -327,6 +374,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path == "/api/tiles":
             return self._create_tile()
+        if self.path == "/api/nhl/team":
+            return self._set_nhl_team()
         if self.path.startswith("/api/launch/"):
             return self._proxy_launch(self.path[len("/api/launch/"):])
         if self.path.startswith("/api/key/"):
@@ -423,15 +472,49 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    # ---- optional NHL widget (only used if NHL_TEAM is set) ----
+    # ---- optional NHL widget (hidden until a team is picked) ----
 
     def _nhl_summary(self):
-        if not NHL_TEAM:
+        team = current_nhl_team()
+        if not team:
             return self._json(200, {"enabled": False})
         try:
-            return self._json(200, build_nhl_summary(NHL_TEAM))
+            return self._json(200, build_nhl_summary(team))
         except (urllib.error.URLError, TimeoutError, ValueError) as e:
             return self._json(502, {"enabled": True, "error": str(e)})
+
+    def _nhl_teams(self):
+        try:
+            teams = nhl_teams()
+        except (urllib.error.URLError, TimeoutError, ValueError) as e:
+            return self._json(502, {"error": str(e)})
+        self._json(200, {"teams": teams, "current": current_nhl_team()})
+
+    def _set_nhl_team(self):
+        if not self._authorized():
+            return self._json(401, {"error": "invalid or missing edit token"})
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        if length <= 0 or length > 1024:
+            return self._json(400, {"error": "expected a small JSON body"})
+        try:
+            team = json.loads(self.rfile.read(length)).get("team", "")
+        except (ValueError, AttributeError):
+            return self._json(400, {"error": "expected JSON like {\"team\": \"TOR\"}"})
+        if not isinstance(team, str):
+            return self._json(400, {"error": "team must be a string"})
+        team = team.strip().upper()
+        if team:
+            try:
+                valid = {t["abbrev"] for t in nhl_teams()}
+            except (urllib.error.URLError, TimeoutError, ValueError):
+                valid = None  # NHL unreachable: fall back to a shape check
+            if (valid is not None and team not in valid) or not re.fullmatch(r"[A-Z]{3}", team):
+                return self._json(400, {"error": f"unknown NHL team: {team}"})
+        with SETTINGS_LOCK:
+            settings = load_settings()
+            settings["nhlTeam"] = team
+            save_settings(settings)
+        self._json(200, {"team": team})
 
     # ---- optional Roku ECP fallback (only used if ROKU_IP is set) ----
 
@@ -494,8 +577,9 @@ def main():
     print(f"Stealth Smart TV backend running at http://localhost:{LISTEN_PORT}")
     if ROKU_IP:
         print(f"Proxying ECP to TV at {ROKU_BASE}")
-    if NHL_TEAM:
-        print(f"NHL widget enabled for {NHL_TEAM}")
+    team = current_nhl_team()
+    if team:
+        print(f"NHL widget showing {team}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
